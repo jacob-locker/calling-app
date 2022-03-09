@@ -5,26 +5,15 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Alignment
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.rememberNavController
 import com.locker.callingapp.model.AuthResult
-import com.locker.callingapp.model.User
 import com.locker.callingapp.repository.auth.AuthUiProvider
 import com.locker.callingapp.repository.auth.UserRepository
 import com.locker.callingapp.ui.navigation.NavigationComponent
-import com.locker.callingapp.ui.navigation.Navigator
 import com.locker.callingapp.ui.theme.CallingAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -38,10 +27,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var userRepository: UserRepository
 
-    private val invitesViewModel by viewModels<InvitesViewModel>()
-    private val callRoomViewModel by viewModels<CallRoomViewModel>()
+    private val mainViewModel by viewModels<MainViewModel>()
 
-    private val onBack: () -> Unit = {}
+    private val callRoomViewModel by viewModels<CallRoomViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,6 +80,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @OptIn(ExperimentalAnimationApi::class)
     private fun showContent() {
         setContent {
             CallingAppTheme {
@@ -100,18 +89,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    NavigationComponent(invitesViewModel, callRoomViewModel, navController = rememberNavController())
+                    NavigationComponent(mainViewModel, callRoomViewModel)
                 }
             }
         }
-    }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    CallingAppTheme {
-
     }
 }

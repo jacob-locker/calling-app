@@ -5,6 +5,8 @@ sealed class CloudResult<T> {
     class Failure<T>(val error: Throwable?) : CloudResult<T>()
 }
 
+fun CloudResult<Boolean>.isSuccessful() = this is CloudResult.Success && this.value
+
 inline fun <reified T> CloudResult<T>.toBooleanResult(): CloudResult<Boolean> = when (T::class.java) {
     Boolean::class.java -> when (this) {
         is CloudResult.Failure -> CloudResult.Failure(error)

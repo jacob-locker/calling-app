@@ -9,5 +9,5 @@ interface CloudProxy {
 
     val invites: Flow<List<RoomInvite>>
 
-    fun makeCallRequest(callRoomRequest: CallRoomRequest) : Flow<CloudResult<Boolean>>
+    suspend fun makeCallRequest(callRoomRequest: CallRoomRequest) : CloudResult<Boolean>
 }

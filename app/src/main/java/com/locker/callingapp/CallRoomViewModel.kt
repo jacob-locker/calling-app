@@ -44,9 +44,7 @@ class CallRoomViewModel @Inject constructor(
         ).map { (action, user, activeRoom) ->
             if (action is UiAction.LeaveRoom) {
                 Log.d(this@CallRoomViewModel.TAG, "makeCallRequest: Leave")
-                cloudProxy.makeCallRequest(CallRoomRequest.Leave(activeRoom)).collect {
-
-                }
+                cloudProxy.makeCallRequest(CallRoomRequest.Leave(activeRoom))
                 accept(UiAction.None)
                 UiState(user!!, emptyList())
             } else {
@@ -59,6 +57,11 @@ class CallRoomViewModel @Inject constructor(
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = UiState(userRepository.userFlow.value!!, emptyList())
             )
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.d(TAG, "onCleared")
     }
 
     data class UiState(val self: User, val usersInRoom: List<User>)

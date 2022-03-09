@@ -1,6 +1,7 @@
 package com.locker.callingapp.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,54 +9,45 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Call
-import androidx.compose.material.icons.outlined.Create
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.locker.callingapp.MainViewModel.*
 import com.locker.callingapp.R
-import com.locker.callingapp.model.User
-import kotlinx.coroutines.Job
-import com.locker.callingapp.InvitesViewModel.*
 import com.locker.callingapp.model.RoomInvite
+import com.locker.callingapp.model.User
+import com.locker.callingapp.repository.cloud.isSuccessful
+import com.locker.callingapp.showToast
 import com.locker.callingapp.ui.navigation.Navigator
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun InvitesScreen(
+fun MainScreen(
     uiState: UiState,
     action: (UiAction) -> Job,
     navController: NavController = rememberNavController()
 ) {
     var selectedNavItem by remember { mutableStateOf(NavItem.START_ROOM) }
     Scaffold(content = { innerPadding ->
-        // Apply the padding globally to the whole BottomNavScreensController
-        Box(modifier = Modifier.padding(innerPadding)) {
-            AnimatedVisibility(visible = selectedNavItem == NavItem.START_ROOM, exit = fadeOut() + slideOutHorizontally(), enter = fadeIn() + slideInHorizontally()) {
-                StartRoomContent(
-                    uiState = uiState,
-                    action = action,
-                    navController = navController
-                )
-            }
-            AnimatedVisibility(visible = selectedNavItem == NavItem.INVITES, exit = fadeOut() + slideOutHorizontally({ it / 2}), enter = fadeIn() + slideInHorizontally(initialOffsetX = { it /2})) {
-                InviteContent(
-                    state = uiState as UiState.Authenticated,
-                    action = action,
-                    navController = navController
-                )
-            }
-        }
+        MainContent(
+            innerPadding = innerPadding,
+            selectedNavItem = selectedNavItem,
+            uiState = uiState,
+            action = action,
+            navController = navController
+        )
     },
         bottomBar = {
             BottomNavigation(modifier = Modifier.wrapContentSize()) {
@@ -96,28 +88,127 @@ fun InvitesScreen(
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
+fun MainContent(
+    innerPadding: PaddingValues,
+    selectedNavItem: NavItem,
+    uiState: UiState,
+    action: (UiAction) -> Job,
+    navController: NavController = rememberNavController()
+) {
+    Box(modifier = Modifier.padding(innerPadding)) {
+        when (uiState) {
+            is UiState.AcceptedInvite -> {
+                if (uiState.cloudResult.isSuccessful()) {
+                    AcceptedInviteSuccessfulContent(uiState = uiState, navController, action)
+                } else {
+                    AcceptedInviteErrorContent(uiState = uiState, action = action)
+                }
+            }
+            is UiState.InvitedUser -> {
+                if (uiState.cloudResult.isSuccessful()) {
+                    InvitedUserSuccessfulContent(uiState = uiState, navController, action)
+                } else {
+                    InvitedUserErrorContent(uiState = uiState, action = action)
+                }
+            }
+            else -> {}
+        }
+
+        if (uiState is UiState.Authenticated) {
+            AnimatedVisibility(visible = uiState !is TransitionState, exit = fadeOut(), enter = fadeIn()) {
+                AuthenticatedContent(
+                    selectedNavItem = selectedNavItem,
+                    uiState = uiState,
+                    action = action
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun AuthenticatedContent(
+    selectedNavItem: NavItem,
+    uiState: UiState.Authenticated,
+    action: (UiAction) -> Job
+) {
+    AnimatedVisibility(
+        visible = selectedNavItem == NavItem.START_ROOM,
+        exit = fadeOut() + slideOutHorizontally(),
+        enter = fadeIn() + slideInHorizontally()
+    ) {
+        StartRoomContent(
+            uiState = uiState,
+            action = action
+        )
+    }
+
+    AnimatedVisibility(
+        visible = selectedNavItem == NavItem.INVITES,
+        exit = fadeOut() + slideOutHorizontally { it / 2 },
+        enter = fadeIn() + slideInHorizontally(initialOffsetX = { it / 2 })
+    ) {
+        InviteContent(
+            state = uiState,
+            action = action
+        )
+    }
+}
+
+@Composable
+fun AcceptedInviteSuccessfulContent(uiState: UiState.AcceptedInvite, navController: NavController, action: (UiAction) -> Job) {
+    // Just need to navigate to call room now
+    navigateToCallRoom(navController, action)
+}
+
+@Composable
+fun AcceptedInviteErrorContent(uiState: UiState.AcceptedInvite, action: (UiAction) -> Job) {
+    LocalContext.current.showToast("Could not join room!")
+    action(UiAction.RejectInvite(uiState.roomInvite))
+}
+
+@Composable
+fun InvitedUserSuccessfulContent(uiState: UiState.InvitedUser, navController: NavController, action: (UiAction) -> Job) {
+    // Just need to navigate to call room now
+    navigateToCallRoom(navController, action)
+}
+
+fun navigateToCallRoom(navController: NavController, action: (UiAction) -> Job) {
+    navController.navigate(Navigator.NavTarget.CallRoom.label)
+    action(UiAction.None)
+}
+
+@Composable
+fun InvitedUserErrorContent(uiState: UiState.InvitedUser, action: (UiAction) -> Job) {
+    LocalContext.current.showToast("Error in sending invite!")
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
 fun InviteContent(
     state: UiState.Authenticated,
-    action: (UiAction) -> Job,
-    navController: NavController = rememberNavController(),
+    action: (UiAction) -> Job
 ) {
     AnimatedVisibility(visible = state.invites.isNotEmpty(), enter = fadeIn(), exit = fadeOut()) {
         InvitationList(invites = state.invites, onItemClick = { roomInvite, accepted ->
             if (accepted) {
-                action(UiAction.AcceptInvite(roomInvite) { success ->
-                    if (success) {
-                        navController.navigate(Navigator.NavTarget.CallRoom.label)
-                    } else {
-                        action(UiAction.RejectInvite(roomInvite))
-                    }
-                })
+                action(UiAction.AcceptInvite(roomInvite))
             } else {
                 action(UiAction.RejectInvite(roomInvite))
             }
         })
     }
 
-    AnimatedVisibility(visible = state.invites.isEmpty(), enter = fadeIn(), exit = fadeOut()) {
+    var delayShowing by remember { mutableStateOf(false) }
+    if (state.invites.isEmpty()) {
+        LaunchedEffect(state is TransitionState) {
+            delay(500)
+            delayShowing = true
+        }
+    }
+
+    AnimatedVisibility(visible = delayShowing && state.invites.isEmpty() && state !is TransitionState, enter = fadeIn(), exit = fadeOut()) {
         Box(modifier = Modifier.fillMaxSize()) {
             Text(
                 "No Notifications ;(", modifier = Modifier.align(Alignment.Center),
@@ -129,51 +220,30 @@ fun InviteContent(
 
 @Composable
 fun StartRoomContent(
-    uiState: UiState,
-    action: (UiAction) -> Job,
-    navController: NavController = rememberNavController()
-) {
-    when (uiState) {
-        is UiState.Authenticated -> AuthenticatedContent(state = uiState,
-            onItemClick = { user ->
-                action(UiAction.Invite(user) { success ->
-                    if (success) {
-                        navController.navigate(Navigator.NavTarget.CallRoom.label)
-                    }
-                })
-            })
-        is UiState.NeedsAuthentication -> NeedsAuthenticationContent(state = uiState)
-        is UiState.Calling -> CallingContent(callingUiState = uiState) {
-
-        }
-    }
-}
-
-@OptIn(ExperimentalAnimationApi::class)
-@Composable
-fun AuthenticatedContent(
-    state: UiState.Authenticated,
-    onItemClick: (User) -> Unit
+    uiState: UiState.Authenticated,
+    action: (UiAction) -> Job
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        UserList(state = state, onItemClick = onItemClick)
+        UserList(state = uiState, onItemClick = { user ->
+            action(UiAction.Invite(user))
+        })
     }
-
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun InvitationList(invites: List<RoomInvite>, onItemClick: (RoomInvite, Boolean) -> Unit) {
     LazyColumn {
-        items(invites.size) {
-            InvitationItem(invites[it], onItemClick)
+        items(invites.size, { invites[it].inviteId }) {
+            InvitationItem(invites[it], onItemClick, modifier = Modifier.animateItemPlacement())
         }
     }
 }
 
 @Composable
-fun InvitationItem(invite: RoomInvite, onItemClick: (RoomInvite, Boolean) -> Unit) {
+fun InvitationItem(invite: RoomInvite, onItemClick: (RoomInvite, Boolean) -> Unit, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(128.dp)
             .padding(8.dp),
@@ -280,9 +350,4 @@ fun CallingContentPreview() {
     CallingContent(callingUiState = UiState.Calling(User("alkdjflkaj", "John Jones"))) {
 
     }
-}
-
-@Composable
-fun NeedsAuthenticationContent(state: UiState.NeedsAuthentication) {
-    Text("Waiting for Authentication...")
 }

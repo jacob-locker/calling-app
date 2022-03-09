@@ -1,13 +1,15 @@
 package com.locker.callingapp.ui.screens
 
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material.Card
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,13 +17,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.locker.callingapp.CallRoomViewModel
-import com.locker.callingapp.CallRoomViewModel.*
+import com.locker.callingapp.CallRoomViewModel.UiAction
+import com.locker.callingapp.CallRoomViewModel.UiState
 import com.locker.callingapp.model.User
-import com.locker.callingapp.ui.BackButtonHandler
-import com.locker.callingapp.ui.navigation.Navigator
 import kotlinx.coroutines.Job
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CallRoomScreen(uiState: UiState, action: (UiAction) -> Job, navController: NavController = rememberNavController()) {
     BackHandler {
@@ -37,18 +38,19 @@ fun CallRoomScreen(uiState: UiState, action: (UiAction) -> Job, navController: N
     }
 }
 
+@ExperimentalFoundationApi
 @Composable
 fun RoomUserList(self: User, usersInRoom: List<User>) {
     LazyRow {
         items(usersInRoom.size, { usersInRoom[it].id!! }) {
-            RoomUserItem(user = usersInRoom[it])
+            RoomUserItem(user = usersInRoom[it], modifier = Modifier.animateItemPlacement())
         }
     }
 }
 
 @Composable
-fun RoomUserItem(user: User) {
-    Card(modifier = Modifier
+fun RoomUserItem(user: User, modifier: Modifier = Modifier) {
+    Card(modifier = modifier
         .size(128.dp)
         .padding(8.dp),
     shape = RoundedCornerShape(16.dp),

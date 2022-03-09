@@ -21,16 +21,13 @@ class CloudProxyImpl(
     override val invites: Flow<List<RoomInvite>>
         get() = invitesCloudDao.invites
 
-    override fun makeCallRequest(callRoomRequest: CallRoomRequest) = flow {
-        val result = when (callRoomRequest) {
+    override suspend fun makeCallRequest(callRoomRequest: CallRoomRequest) =
+        when (callRoomRequest) {
             is CallRoomRequest.Invite -> invite(callRoomRequest)
             is CallRoomRequest.Join -> joinRoom(callRoomRequest).also { invitesCloudDao.removeInvite(callRoomRequest.roomInvite) }
             is CallRoomRequest.Leave -> leaveRoom(callRoomRequest)
             is CallRoomRequest.Reject -> rejectInvite(callRoomRequest)
         }
-
-        emit(result)
-    }.flowOn(Dispatchers.IO)
 
     private suspend fun invite(inviteRequest: CallRoomRequest.Invite) =
         when (inviteRequest.callRoom) {
