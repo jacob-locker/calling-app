@@ -10,13 +10,17 @@ import com.locker.callingapp.model.*
 import com.locker.callingapp.repository.auth.UserRepository
 import com.locker.callingapp.repository.cloud.CallRoomCloudDao
 import com.locker.callingapp.repository.cloud.CloudResult
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class CallRoomFirebaseDao(
     userRepository: UserRepository,
+    coroutineScope: CoroutineScope,
     private val firebaseDatabase: FirebaseDatabase
-) : BaseFirebaseDao(userRepository), CallRoomCloudDao {
+) : BaseFirebaseDao(userRepository, coroutineScope), CallRoomCloudDao {
 
     private val mutableActiveRoom = MutableStateFlow<CallRoom>(CallRoom.None)
 
@@ -51,7 +55,6 @@ class CallRoomFirebaseDao(
     ) = retrieveRoomCloudResult(roomId) { snapshot ->
         Log.d(this@CallRoomFirebaseDao.TAG, "Adding user to room")
 
-        var added = false
         val room = snapshot.getValue(FirebaseCallRoom::class.java)
         if (room != null) {
             if (room.users == null) {
@@ -61,7 +64,6 @@ class CallRoomFirebaseDao(
             if (user?.id !in room.users ?: emptyList()) {
                 room.users?.add(user?.id)
                 snapshot.ref.setValue(room)
-                added = true
             }
 
             if (user?.id == currentUser?.id) {
@@ -69,7 +71,7 @@ class CallRoomFirebaseDao(
             }
         }
 
-        added
+        room?.toActiveCallRoom()
     }
 
     override suspend fun removeUserFromRoom(
@@ -91,6 +93,17 @@ class CallRoomFirebaseDao(
         }
 
         true
+    }
+
+    override suspend fun isCurrentUserInRoom(): CloudResult<Boolean> = suspendCoroutine { cont ->
+        firebaseDatabase.reference.database.getReference(CALLS_PATH).get().addOnSuccessListener { snapshot ->
+            val userInRoom = snapshot.children.map { child -> child.getValue(FirebaseCallRoom::class.java) }.any {
+                it?.users?.any { userId -> userId != null && userId == currentUser?.id } ?: false
+            }
+            cont.resume(CloudResult.Success(userInRoom))
+        }.addOnFailureListener {
+            cont.resume(CloudResult.Failure(it))
+        }
     }
 
     private fun updateActiveRoom(newRoom: CallRoom) {
@@ -120,7 +133,7 @@ class CallRoomFirebaseDao(
 
     private suspend fun <T> retrieveRoomCloudResult(
         roomId: String?,
-        converter: (DataSnapshot) -> T
+        converter: (DataSnapshot) -> T?
     ) = retrieveCloudResult(getCallsRefById(roomId), converter)
 
     private fun getCallsRef(call: CallRoom.Active?) =

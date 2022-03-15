@@ -7,6 +7,7 @@ import com.locker.callingapp.model.CallRoom
 import com.locker.callingapp.model.CallRoomRequest
 import com.locker.callingapp.model.User
 import com.locker.callingapp.repository.auth.UserRepository
+import com.locker.callingapp.repository.call.WebRtcProxy
 import com.locker.callingapp.repository.cloud.CloudProxy
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
@@ -17,7 +18,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CallRoomViewModel @Inject constructor(
     private val cloudProxy: CloudProxy,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val webRtcProxy: WebRtcProxy
 ) : ViewModel() {
 
     val state: StateFlow<UiState>

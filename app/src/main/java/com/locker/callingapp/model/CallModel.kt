@@ -1,5 +1,7 @@
 package com.locker.callingapp.model
 
+import com.locker.callingapp.repository.call.ConnectionInfo
+
 sealed class BaseCallerInformation
 data class CallerInformation(val name: String) : BaseCallerInformation()
 object EmptyCallerInformation : BaseCallerInformation()

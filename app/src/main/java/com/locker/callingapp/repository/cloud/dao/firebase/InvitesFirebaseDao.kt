@@ -6,16 +6,19 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.locker.callingapp.model.*
 import com.locker.callingapp.repository.auth.UserRepository
+import com.locker.callingapp.repository.call.ConnectionInfo
 import com.locker.callingapp.repository.cloud.CloudResult
 import com.locker.callingapp.repository.cloud.InvitesCloudDao
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import javax.inject.Inject
 
 class InvitesFirebaseDao @Inject constructor(
     private val userRepository: UserRepository,
+    coroutineScope: CoroutineScope,
     private val firebaseDatabase: FirebaseDatabase
-) : BaseFirebaseDao(userRepository), InvitesCloudDao {
+) : BaseFirebaseDao(userRepository, coroutineScope), InvitesCloudDao {
 
     private val invitesListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {

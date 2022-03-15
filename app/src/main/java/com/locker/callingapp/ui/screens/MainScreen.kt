@@ -20,15 +20,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.locker.callingapp.MainViewModel.*
 import com.locker.callingapp.R
 import com.locker.callingapp.model.RoomInvite
 import com.locker.callingapp.model.User
 import com.locker.callingapp.repository.cloud.isSuccessful
 import com.locker.callingapp.showToast
+import com.locker.callingapp.ui.navigation.NavTarget
 import com.locker.callingapp.ui.navigation.Navigator
+import com.locker.callingapp.ui.navigation.PreviewNavigator
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 
@@ -37,7 +37,7 @@ import kotlinx.coroutines.delay
 fun MainScreen(
     uiState: UiState,
     action: (UiAction) -> Job,
-    navController: NavController = rememberNavController()
+    navigator: Navigator = PreviewNavigator
 ) {
     var selectedNavItem by remember { mutableStateOf(NavItem.START_ROOM) }
     Scaffold(content = { innerPadding ->
@@ -46,7 +46,7 @@ fun MainScreen(
             selectedNavItem = selectedNavItem,
             uiState = uiState,
             action = action,
-            navController = navController
+            navigator = navigator
         )
     },
         bottomBar = {
@@ -93,20 +93,20 @@ fun MainContent(
     selectedNavItem: NavItem,
     uiState: UiState,
     action: (UiAction) -> Job,
-    navController: NavController = rememberNavController()
+    navigator: Navigator = PreviewNavigator
 ) {
     Box(modifier = Modifier.padding(innerPadding)) {
         when (uiState) {
             is UiState.AcceptedInvite -> {
                 if (uiState.cloudResult.isSuccessful()) {
-                    AcceptedInviteSuccessfulContent(uiState = uiState, navController, action)
+                    AcceptedInviteSuccessfulContent(navigator, action)
                 } else {
                     AcceptedInviteErrorContent(uiState = uiState, action = action)
                 }
             }
             is UiState.InvitedUser -> {
                 if (uiState.cloudResult.isSuccessful()) {
-                    InvitedUserSuccessfulContent(uiState = uiState, navController, action)
+                    InvitedUserSuccessfulContent(navigator, action)
                 } else {
                     InvitedUserErrorContent(uiState = uiState, action = action)
                 }
@@ -157,9 +157,9 @@ fun AuthenticatedContent(
 }
 
 @Composable
-fun AcceptedInviteSuccessfulContent(uiState: UiState.AcceptedInvite, navController: NavController, action: (UiAction) -> Job) {
+fun AcceptedInviteSuccessfulContent(navigator: Navigator, action: (UiAction) -> Job) {
     // Just need to navigate to call room now
-    navigateToCallRoom(navController, action)
+    navigateToCallRoom(navigator, action)
 }
 
 @Composable
@@ -169,13 +169,14 @@ fun AcceptedInviteErrorContent(uiState: UiState.AcceptedInvite, action: (UiActio
 }
 
 @Composable
-fun InvitedUserSuccessfulContent(uiState: UiState.InvitedUser, navController: NavController, action: (UiAction) -> Job) {
+fun InvitedUserSuccessfulContent(navigator: Navigator, action: (UiAction) -> Job) {
     // Just need to navigate to call room now
-    navigateToCallRoom(navController, action)
+    navigateToCallRoom(navigator, action)
 }
 
-fun navigateToCallRoom(navController: NavController, action: (UiAction) -> Job) {
-    navController.navigate(Navigator.NavTarget.CallRoom.label)
+@Composable
+fun navigateToCallRoom(navigator: Navigator, action: (UiAction) -> Job) {
+    navigator.navigateTo(NavTarget.CallRoom)
     action(UiAction.None)
 }
 

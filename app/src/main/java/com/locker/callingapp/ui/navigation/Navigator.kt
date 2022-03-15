@@ -1,23 +1,11 @@
 package com.locker.callingapp.ui.navigation
 
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 
-object Navigator {
-    var StartDestination = NavTarget.Invites
-    private val _stateFlow =
-      MutableStateFlow<NavTarget>(StartDestination)
-    val sharedFlow = _stateFlow.asSharedFlow()
+interface Navigator {
+    val startDestination: NavTarget
+    val navCommandFlow: SharedFlow<NavCommand>
 
-
-
-    fun navigateTo(navTarget: NavTarget) {
-        _stateFlow.tryEmit(navTarget)
-    }
-
-    enum class NavTarget(val label: String) {
-        Invites("invites"),
-        CallRoom("call_room")
-    }
+    fun navigateTo(navTarget: NavTarget)
+    fun popBackstack()
 }

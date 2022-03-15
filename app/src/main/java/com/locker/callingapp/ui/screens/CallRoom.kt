@@ -15,19 +15,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.locker.callingapp.CallRoomViewModel.UiAction
 import com.locker.callingapp.CallRoomViewModel.UiState
 import com.locker.callingapp.model.User
+import com.locker.callingapp.ui.navigation.Navigator
+import com.locker.callingapp.ui.navigation.PreviewNavigator
 import kotlinx.coroutines.Job
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun CallRoomScreen(uiState: UiState, action: (UiAction) -> Job, navController: NavController = rememberNavController()) {
+fun CallRoomScreen(uiState: UiState, action: (UiAction) -> Job, navigator: Navigator = PreviewNavigator) {
     BackHandler {
         action(UiAction.LeaveRoom)
-        navController.popBackStack()
+        navigator.popBackstack()
     }
     Scaffold(modifier = Modifier
         .fillMaxSize()

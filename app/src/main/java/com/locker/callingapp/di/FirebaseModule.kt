@@ -9,12 +9,16 @@ import com.locker.callingapp.repository.auth.FirebaseUserRepository
 import com.locker.callingapp.repository.auth.UserRepository
 import com.locker.callingapp.repository.cloud.CallRoomCloudDao
 import com.locker.callingapp.repository.cloud.InvitesCloudDao
+import com.locker.callingapp.repository.cloud.WebRtcCloudDao
 import com.locker.callingapp.repository.cloud.dao.firebase.CallRoomFirebaseDao
 import com.locker.callingapp.repository.cloud.dao.firebase.InvitesFirebaseDao
+import com.locker.callingapp.repository.cloud.dao.firebase.WebRtcFirebaseDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import javax.inject.Singleton
 
 @Module
@@ -46,12 +50,20 @@ object FirebaseModule {
         userRepository: UserRepository,
         firebaseDatabase: FirebaseDatabase
     ): CallRoomCloudDao =
-        CallRoomFirebaseDao(userRepository, firebaseDatabase)
+        CallRoomFirebaseDao(userRepository, CoroutineScope(Dispatchers.IO), firebaseDatabase)
 
     @Provides
     @Singleton
     fun provideFirebaseInvitesDao(
         userRepository: UserRepository,
         firebaseDatabase: FirebaseDatabase
-    ): InvitesCloudDao = InvitesFirebaseDao(userRepository, firebaseDatabase)
+    ): InvitesCloudDao = InvitesFirebaseDao(userRepository, CoroutineScope(Dispatchers.IO), firebaseDatabase)
+
+    @Provides
+    @Singleton
+    fun provideFirebaseWebRtcDao(
+        userRepository: UserRepository,
+        callRoomCloudDao: CallRoomCloudDao,
+        firebaseDatabase: FirebaseDatabase
+    ): WebRtcCloudDao = WebRtcFirebaseDao(userRepository, callRoomCloudDao, CoroutineScope(Dispatchers.IO), firebaseDatabase)
 }

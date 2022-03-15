@@ -13,8 +13,10 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-sealed class BaseFirebaseDao(private val userRepository: UserRepository) : CloudDao {
-    protected val coroutineScope = CoroutineScope(Dispatchers.IO)
+sealed class BaseFirebaseDao(
+    private val userRepository: UserRepository,
+    private val coroutineScope: CoroutineScope
+) : CloudDao {
     override var currentUser: User? = null
 
     init {
@@ -30,10 +32,23 @@ sealed class BaseFirebaseDao(private val userRepository: UserRepository) : Cloud
 
     protected suspend fun <T> retrieveCloudResult(
         databaseReference: DatabaseReference?,
-        converter: (DataSnapshot) -> T
+        converter: (DataSnapshot) -> T?
     ): CloudResult<T> = suspendCoroutine { cont ->
         databaseReference?.get()
-            ?.addOnSuccessListener { cont.resume(CloudResult.Success(converter(it))) }
+            ?.addOnSuccessListener {
+                val converted = converter(it)
+                cont.resume(if (converted != null) CloudResult.Success(converted) else CloudResult.Failure(null))
+            }
+            ?.addOnFailureListener { cont.resume(CloudResult.Failure(it)) }
+            ?: cont.resume(CloudResult.Failure(null))
+    }
+
+    protected suspend fun setCloudValue(
+        databaseReference: DatabaseReference?,
+        value: Any
+    ): CloudResult<Boolean> = suspendCoroutine { cont ->
+        databaseReference?.setValue(value)
+            ?.addOnSuccessListener { cont.resume(CloudResult.Success(true)) }
             ?.addOnFailureListener { cont.resume(CloudResult.Failure(it)) }
             ?: cont.resume(CloudResult.Failure(null))
     }

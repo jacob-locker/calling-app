@@ -1,25 +1,47 @@
 package com.locker.callingapp.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.locker.callingapp.CallRoomViewModel
+import com.locker.callingapp.MainActivity
 import com.locker.callingapp.MainViewModel
 import com.locker.callingapp.ui.screens.CallRoomScreen
 import com.locker.callingapp.ui.screens.MainScreen
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 @Composable
-fun NavigationComponent(mainViewModel: MainViewModel, callRoomViewModel: CallRoomViewModel) {
-    val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = Navigator.StartDestination.label) {
-        composable(Navigator.NavTarget.Invites.label) {
-            MainScreen(mainViewModel.state.collectAsState().value, mainViewModel.accept, navController)
+fun NavigationComponent(
+    mainViewModel: MainViewModel,
+    callRoomViewModel: CallRoomViewModel,
+    navHostController: NavHostController,
+    navigator: Navigator
+) {
+    LaunchedEffect("navigation") {
+        navigator.navCommandFlow.onEach { command ->
+            when (command) {
+                is NavCommand.Navigate -> navHostController.navigate(command.target.label)
+                is NavCommand.PopBackstack -> navHostController.popBackStack()
+            }
+        }.launchIn(this)
+    }
+    NavHost(
+        navController = navHostController,
+        startDestination = navigator.startDestination.label
+    ) {
+        composable(NavTarget.Invites.label) {
+            MainScreen(mainViewModel.state.collectAsState().value, mainViewModel.accept, navigator)
         }
-        composable(Navigator.NavTarget.CallRoom.label) {
-            CallRoomScreen(uiState = callRoomViewModel.state.collectAsState().value, callRoomViewModel.accept, navController)
+        composable(NavTarget.CallRoom.label) {
+            CallRoomScreen(
+                uiState = callRoomViewModel.state.collectAsState().value,
+                callRoomViewModel.accept,
+                navigator
+            )
         }
     }
 }
